@@ -16,3 +16,5 @@ pyttsx3
 pypdf
 python-dotenv
 streamlit
+uvicorn
+fastapi
