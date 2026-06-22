@@ -88,19 +88,29 @@ class VoiceOutput:
 
 
 # WebSocket server for streaming tokens to a frontend
+MAX_WS_MESSAGE_LENGTH = 2000
+
 async def token_stream_server(websocket, path, graph, retriever, memory):
     """
     WebSocket handler: receives a question, runs the graph,
     streams answer tokens back to the client in real time.
     """
     async for message in websocket:
-        async for event in graph.astream(make_initial_state(message)):
-            # Stream token chunks as they're generated
+        if not isinstance(message, str) or len(message) > MAX_WS_MESSAGE_LENGTH:
+            await websocket.send("[ERROR] Message too long or invalid")
+            continue
+
+        question = message.strip()
+        if not question:
+            await websocket.send("[ERROR] Empty message")
+            continue
+
+        async for event in graph.astream(make_initial_state(question)):
             if "answer_tokens" in event:
                 for token in event["answer_tokens"]:
                     await websocket.send(token)
         
-        await websocket.send("[DONE]")  # signal completion
+        await websocket.send("[DONE]")
 
 async def start_ws_server(graph, retriever, memory):
     handler = lambda ws, path: token_stream_server(

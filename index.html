@@ -533,7 +533,14 @@ function log(msg, type = '') {
   const now  = new Date().toLocaleTimeString('en-IN', { hour12: false, hour:'2-digit', minute:'2-digit', second:'2-digit' });
   const line = document.createElement('div');
   line.className = `log-line ${type}`;
-  line.innerHTML = `<span class="log-time">[${now}]</span><span class="log-msg">${msg}</span>`;
+  const timeSpan = document.createElement('span');
+  timeSpan.className = 'log-time';
+  timeSpan.textContent = `[${now}]`;
+  const msgSpan = document.createElement('span');
+  msgSpan.className = 'log-msg';
+  msgSpan.textContent = msg;
+  line.appendChild(timeSpan);
+  line.appendChild(msgSpan);
   box.appendChild(line);
   box.scrollTop = box.scrollHeight;
 }
@@ -556,7 +563,12 @@ function renderFiles() {
   state.files.forEach(f => {
     const el = document.createElement('div');
     el.className = 'file-item';
-    el.innerHTML = `<span>📄</span><span>${f.name}</span>`;
+    const icon = document.createElement('span');
+    icon.textContent = '📄';
+    const name = document.createElement('span');
+    name.textContent = f.name;
+    el.appendChild(icon);
+    el.appendChild(name);
     fileList.appendChild(el);
   });
   loadBtn.disabled = state.files.length === 0;
