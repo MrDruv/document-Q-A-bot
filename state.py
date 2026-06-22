@@ -19,3 +19,14 @@ class AgentState(TypedDict):
     hallucination_score: float                # 0-1, lower = safer
     retry_count: int                          # avoid infinite loops
     audio_bytes: bytes                        # TTS output
+
+
+def make_initial_state(question: str) -> AgentState:
+    """Build the default initial state for a graph invocation."""
+    return {
+        "question": question,
+        "retry_count": 0,
+        "answer_tokens": [],
+        "documents": [],
+        "hallucination_score": 1.0,
+    }

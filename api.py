@@ -1,5 +1,4 @@
 # api.py
-import os
 import shutil
 from pathlib import Path
 from fastapi import FastAPI, UploadFile, File, Form
@@ -9,10 +8,8 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-from documents import load_and_split_docs
-from retriever import RAGRetriever
-from memory import AgentMemory
-from graph import build_graph
+from state import make_initial_state
+from pipeline import init_pipeline
 
 app = FastAPI()
 
@@ -47,28 +44,20 @@ async def upload_docs(files: list[UploadFile] = File(...)):
         with open(save_path, "wb") as f:
             shutil.copyfileobj(file.file, f)
 
-    docs = load_and_split_docs("./data/")
-    state["retriever"] = RAGRetriever(docs)
-    state["memory"]    = AgentMemory(k=5)
-    state["graph"]     = build_graph(state["retriever"], state["memory"])
+    retriever, memory, graph = init_pipeline("./data/")
+    state["retriever"] = retriever
+    state["memory"]    = memory
+    state["graph"]     = graph
     state["loaded"]    = True
 
-    return {"status": "ok", "chunks": len(docs)}
+    return {"status": "ok"}
 
 @app.post("/ask")
 async def ask(question: str = Form(...)):
     if not state["loaded"]:
         return JSONResponse({"error": "No documents loaded"}, status_code=400)
 
-    agent_state = {
-        "question":            question,
-        "retry_count":         0,
-        "answer_tokens":       [],
-        "documents":           [],
-        "hallucination_score": 1.0,
-    }
-
-    result = state["graph"].invoke(agent_state)
+    result = state["graph"].invoke(make_initial_state(question))
     return {"answer": result["answer"]}
 
 @app.post("/clear")

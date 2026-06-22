@@ -1,12 +1,12 @@
 # graph.py — the core of the system
 from langgraph.graph import StateGraph, END
-from langchain_groq import ChatGroq
 from langchain_core.output_parsers import StrOutputParser
 from state import AgentState
 from retriever import RAGRetriever
 from prompts import RAG_PROMPT, REWRITER_PROMPT
 from memory import AgentMemory
 from config import cfg
+from llm import get_llm
 
 # ─── Node Implementations ───────────────────────────────────────────
 
@@ -15,8 +15,7 @@ def rewrite_query(state: AgentState) -> dict:
     Node 1: Rewrite the raw STT transcript for better retrieval.
     STT often includes filler words that hurt embedding similarity.
     """
-    llm = ChatGroq(model=cfg.llm_model, temperature=0)
-    chain = REWRITER_PROMPT | llm | StrOutputParser()
+    chain = REWRITER_PROMPT | get_llm() | StrOutputParser()
     rewritten = chain.invoke({"question": state["question"]})
     return {"rewritten_query": rewritten}
 
@@ -35,12 +34,12 @@ def grade_documents(state: AgentState) -> dict:
     Node 3: Filter docs below relevance threshold.
     Prevents hallucination from weak matches.
     """
-    llm = ChatGroq(model=cfg.llm_model, temperature=0)
     grader_prompt = """Rate if this document is relevant to the question.
     Question: {question}
     Document: {document}
     Return only: 'relevant' or 'irrelevant'"""
     
+    llm = get_llm()
     filtered = []
     for doc in state["documents"]:
         result = llm.invoke(grader_prompt.format(
@@ -58,11 +57,7 @@ def generate_answer(state: AgentState, memory: AgentMemory) -> dict:
     Node 4: Generate a streaming answer using retrieved context.
     Chunks are accumulated in answer_tokens for real-time TTS.
     """
-    llm = ChatGroq(
-        model=cfg.llm_model,
-        temperature=cfg.temperature,
-        streaming=True
-    )
+    llm = get_llm(temperature=cfg.temperature, streaming=True)
     
     context = "\n\n".join([
         f"[{doc.metadata.get('source', 'doc')}]\n{doc.page_content}"
@@ -93,7 +88,6 @@ def grade_hallucination(state: AgentState) -> dict:
     Node 5: Check if the answer is grounded in the documents.
     Returns a score; the edge condition decides whether to retry.
     """
-    llm = ChatGroq(model=cfg.llm_model, temperature=0)
     prompt = """Given the context and answer, rate if the answer is fully 
     supported by the context. Score 0.0 (not supported) to 1.0 (fully supported).
     Context: {context}
@@ -101,7 +95,7 @@ def grade_hallucination(state: AgentState) -> dict:
     Return only a float like 0.8"""
     
     context = "\n".join([d.page_content[:300] for d in state["documents"]])
-    result = llm.invoke(prompt.format(
+    result = get_llm().invoke(prompt.format(
         context=context, answer=state["answer"]
     ))
     

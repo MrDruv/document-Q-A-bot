@@ -2,6 +2,7 @@
 from langchain_core.tracers import ConsoleCallbackHandler
 from langgraph.checkpoint.sqlite import SqliteSaver
 import time
+from state import make_initial_state
 
 def run_with_debug(graph, question: str, verbose: bool = True):
     """
@@ -18,16 +19,8 @@ def run_with_debug(graph, question: str, verbose: bool = True):
         "callbacks": [ConsoleCallbackHandler()] if verbose else []
     }
     
-    state = {
-        "question": question,
-        "retry_count": 0,
-        "answer_tokens": [],
-        "documents": [],
-        "hallucination_score": 1.0,
-    }
-    
     start = time.perf_counter()
-    result = graph_with_checkpoint.invoke(state, config)
+    result = graph_with_checkpoint.invoke(make_initial_state(question), config)
     elapsed = time.perf_counter() - start
     
     print(f"\n{'='*50}")

@@ -1,7 +1,6 @@
 # documents.py
 from langchain_community.document_loaders import PyPDFLoader, DirectoryLoader
-from langchain_text_splitters import RecursiveCharacterTextSplitter
-from config import cfg
+from text_processing import get_text_splitter
 
 def load_and_split_docs(data_dir: str):
     """
@@ -22,13 +21,7 @@ def load_and_split_docs(data_dir: str):
 
     print(f"✅ Loaded {len(docs)} pages from {data_dir}")
 
-    # Split into chunks
-    splitter = RecursiveCharacterTextSplitter(
-        chunk_size=cfg.chunk_size,
-        chunk_overlap=cfg.chunk_overlap,
-        separators=["\n\n", "\n", ". ", " ", ""]
-    )
-    chunks = splitter.split_documents(docs)
+    chunks = get_text_splitter().split_documents(docs)
 
     print(f"✅ Split into {len(chunks)} chunks")
     return chunks

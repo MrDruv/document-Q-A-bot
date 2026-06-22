@@ -1,7 +1,6 @@
 # chunk_tuner.py — find optimal chunk size empirically
-from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import FAISS
-from langchain_community.embeddings import HuggingFaceEmbeddings
+from text_processing import get_embeddings, get_text_splitter
 
 def evaluate_chunking(docs, test_queries, chunk_size, chunk_overlap):
     """
@@ -11,15 +10,8 @@ def evaluate_chunking(docs, test_queries, chunk_size, chunk_overlap):
     - Summarization: 1024–2048 tokens, medium overlap (128)
     - Voice agents:  512 tokens — balances context and speed
     """
-    splitter = RecursiveCharacterTextSplitter(
-        chunk_size=chunk_size,
-        chunk_overlap=chunk_overlap,
-        separators=["\n\n", "\n", ". ", " ", ""]
-    )
-    chunks = splitter.split_documents(docs)
-    
-    embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
-    vs = FAISS.from_documents(chunks, embeddings)
+    chunks = get_text_splitter(chunk_size=chunk_size, chunk_overlap=chunk_overlap).split_documents(docs)
+    vs = FAISS.from_documents(chunks, get_embeddings())
     
     scores = []
     for query, expected_answer in test_queries:

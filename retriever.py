@@ -1,10 +1,10 @@
 # retriever.py
 from langchain_community.vectorstores import FAISS
-from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_classic.retrievers import ContextualCompressionRetriever
 from langchain_classic.retrievers.document_compressors import CrossEncoderReranker
 from langchain_community.cross_encoders import HuggingFaceCrossEncoder
 from config import cfg
+from text_processing import get_embeddings
 
 class RAGRetriever:
     """
@@ -16,11 +16,7 @@ class RAGRetriever:
     We use them only on the top-k candidates from FAISS.
     """
     def __init__(self, docs):
-        self.embeddings = HuggingFaceEmbeddings(
-            model_name=cfg.embed_model,
-            model_kwargs={"device": "cpu"},
-            encode_kwargs={"normalize_embeddings": True}   # cosine similarity
-        )
+        self.embeddings = get_embeddings()
         
         self.vectorstore = FAISS.from_documents(docs, self.embeddings)
         self.vectorstore.save_local("faiss_index")
