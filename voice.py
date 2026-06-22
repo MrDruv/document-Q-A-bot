@@ -6,6 +6,7 @@ import websockets
 from faster_whisper import WhisperModel
 import pyttsx3
 from config import cfg
+from state import make_initial_state
 
 class VoiceInput:
     """
@@ -93,15 +94,7 @@ async def token_stream_server(websocket, path, graph, retriever, memory):
     streams answer tokens back to the client in real time.
     """
     async for message in websocket:
-        state = {
-            "question": message,
-            "retry_count": 0,
-            "answer_tokens": [],
-            "documents": [],
-            "hallucination_score": 1.0,
-        }
-        
-        async for event in graph.astream(state):
+        async for event in graph.astream(make_initial_state(message)):
             # Stream token chunks as they're generated
             if "answer_tokens" in event:
                 for token in event["answer_tokens"]:

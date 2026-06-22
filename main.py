@@ -1,22 +1,14 @@
 # main.py
 import asyncio
-from documents import load_and_split_docs   # your doc loading logic
-from retriever import RAGRetriever
-from memory import AgentMemory
-from graph import build_graph
 from voice import VoiceInput, VoiceOutput
+from state import make_initial_state
+from pipeline import init_pipeline
 from dotenv import load_dotenv
 load_dotenv()
 
 async def main():
-    print("Loading documents...")
-    docs = load_and_split_docs("./data/")    # your PDFs, CSVs, etc.
-    
-    print("Building retriever...")
-    retriever = RAGRetriever(docs)
-    
-    memory = AgentMemory(k=5)
-    graph = build_graph(retriever, memory)
+    print("Initializing pipeline...")
+    _retriever, _memory, graph = init_pipeline("./data/")
     
     voice_in = VoiceInput()
     voice_out = VoiceOutput()
@@ -33,16 +25,7 @@ async def main():
         
         print(f"You: {question}")
         
-        # Run graph
-        state = {
-            "question": question,
-            "retry_count": 0,
-            "answer_tokens": [],
-            "documents": [],
-            "hallucination_score": 1.0,
-        }
-        
-        result = graph.invoke(state)
+        result = graph.invoke(make_initial_state(question))
         print(f"Agent: {result['answer']}")
         
         # Stream to speaker sentence by sentence
