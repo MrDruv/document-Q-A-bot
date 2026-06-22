@@ -1,6 +1,9 @@
 # documents.py
+import logging
 from langchain_community.document_loaders import PyPDFLoader, DirectoryLoader
 from text_processing import get_text_splitter
+
+logger = logging.getLogger(__name__)
 
 def load_and_split_docs(data_dir: str):
     """
@@ -13,15 +16,22 @@ def load_and_split_docs(data_dir: str):
         glob="**/*.pdf",
         loader_cls=PyPDFLoader
     )
-    docs = loader.load()
+
+    try:
+        docs = loader.load()
+    except Exception as exc:
+        raise RuntimeError(f"Failed to load documents from {data_dir}: {exc}") from exc
 
     if not docs:
-        print("⚠️ No documents found in data/ folder!")
+        logger.warning("No documents found in %s", data_dir)
         return []
 
-    print(f"✅ Loaded {len(docs)} pages from {data_dir}")
+    logger.info("Loaded %d pages from %s", len(docs), data_dir)
 
-    chunks = get_text_splitter().split_documents(docs)
+    try:
+        chunks = get_text_splitter().split_documents(docs)
+    except Exception as exc:
+        raise RuntimeError(f"Failed to split documents into chunks: {exc}") from exc
 
-    print(f"✅ Split into {len(chunks)} chunks")
+    logger.info("Split into %d chunks", len(chunks))
     return chunks

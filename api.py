@@ -1,4 +1,5 @@
 # api.py
+import logging
 import os
 import re
 import shutil
@@ -13,6 +14,8 @@ load_dotenv()
 
 from state import make_initial_state
 from pipeline import init_pipeline
+
+logger = logging.getLogger(__name__)
 
 ALLOWED_ORIGINS = os.getenv("CORS_ORIGINS", "http://localhost:3000").split(",")
 MAX_UPLOAD_SIZE = 10 * 1024 * 1024  # 10 MB per file
@@ -58,8 +61,9 @@ async def upload_docs(files: list[UploadFile] = File(...)):
         try:
             f.unlink(missing_ok=True)
         except PermissionError:
-            pass
+            logger.warning("Could not delete old PDF %s: permission denied", f)
 
+    saved_files = []
     for file in files:
         ext = Path(file.filename).suffix.lower()
         if ext not in ALLOWED_EXTENSIONS:
@@ -74,9 +78,25 @@ async def upload_docs(files: list[UploadFile] = File(...)):
         if not save_path.resolve().is_relative_to(data_dir.resolve()):
             raise HTTPException(status_code=400, detail="Invalid filename")
 
-        save_path.write_bytes(contents)
+        try:
+            save_path.write_bytes(contents)
+            saved_files.append(save_path)
+        except OSError as exc:
+            logger.error("Failed to save uploaded file %s: %s", safe_name, exc)
+            return JSONResponse(
+                {"error": f"Failed to save file {safe_name}: {exc}"},
+                status_code=500,
+            )
 
-    retriever, memory, graph = init_pipeline("./data/")
+    try:
+        retriever, memory, graph = init_pipeline("./data/")
+    except Exception as exc:
+        logger.error("Failed to initialize pipeline: %s", exc)
+        return JSONResponse(
+            {"error": f"Failed to initialize pipeline: {exc}"},
+            status_code=500,
+        )
+
     state["retriever"] = retriever
     state["memory"]    = memory
     state["graph"]     = graph
@@ -95,13 +115,35 @@ async def ask(question: str = Form(...)):
     if len(question) > MAX_QUESTION_LENGTH:
         raise HTTPException(status_code=400, detail=f"Question too long (max {MAX_QUESTION_LENGTH} chars)")
 
-    result = state["graph"].invoke(make_initial_state(question))
+    try:
+        result = state["graph"].invoke(make_initial_state(question))
+    except Exception as exc:
+        logger.error("Graph invocation failed for question '%s': %s", question, exc)
+        return JSONResponse(
+            {"error": f"Failed to generate answer: {exc}"},
+            status_code=500,
+        )
+
+    if "answer" not in result:
+        logger.error("Graph returned no 'answer' key: %s", list(result.keys()))
+        return JSONResponse(
+            {"error": "Internal error: no answer was generated"},
+            status_code=500,
+        )
+
     return {"answer": result["answer"]}
 
 @app.post("/clear")
 async def clear():
     if state["memory"]:
-        state["memory"].clear()
+        try:
+            state["memory"].clear()
+        except Exception as exc:
+            logger.error("Failed to clear memory: %s", exc)
+            return JSONResponse(
+                {"error": f"Failed to clear memory: {exc}"},
+                status_code=500,
+            )
     return {"status": "cleared"}
 
 @app.get("/status")

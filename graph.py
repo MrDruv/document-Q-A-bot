@@ -1,4 +1,5 @@
 # graph.py — the core of the system
+import logging
 from langgraph.graph import StateGraph, END
 from langchain_core.output_parsers import StrOutputParser
 from state import AgentState
@@ -8,6 +9,8 @@ from memory import AgentMemory
 from config import cfg
 from llm import get_llm
 
+logger = logging.getLogger(__name__)
+
 # ─── Node Implementations ───────────────────────────────────────────
 
 def rewrite_query(state: AgentState) -> dict:
@@ -16,7 +19,11 @@ def rewrite_query(state: AgentState) -> dict:
     STT often includes filler words that hurt embedding similarity.
     """
     chain = REWRITER_PROMPT | get_llm() | StrOutputParser()
-    rewritten = chain.invoke({"question": state["question"]})
+    try:
+        rewritten = chain.invoke({"question": state["question"]})
+    except Exception as exc:
+        logger.error("Query rewrite failed, using original question: %s", exc)
+        rewritten = state["question"]
     return {"rewritten_query": rewritten}
 
 
@@ -25,7 +32,11 @@ def retrieve_documents(state: AgentState, retriever: RAGRetriever) -> dict:
     Node 2: Two-stage retrieval using the rewritten query.
     Returns filtered, reranked docs.
     """
-    docs = retriever.retrieve(state["rewritten_query"])
+    try:
+        docs = retriever.retrieve(state["rewritten_query"])
+    except Exception as exc:
+        logger.error("Document retrieval failed: %s", exc)
+        raise RuntimeError(f"Document retrieval failed: {exc}") from exc
     return {"documents": docs}
 
 
@@ -42,11 +53,19 @@ def grade_documents(state: AgentState) -> dict:
     llm = get_llm()
     filtered = []
     for doc in state["documents"]:
-        result = llm.invoke(grader_prompt.format(
-            question=state["rewritten_query"],
-            document=doc.page_content[:500]  # don't send full doc to grader
-        ))
-        if "relevant" in result.content.lower():
+        try:
+            result = llm.invoke(grader_prompt.format(
+                question=state["rewritten_query"],
+                document=doc.page_content[:500]
+            ))
+            if "relevant" in result.content.lower():
+                filtered.append(doc)
+        except Exception as exc:
+            logger.warning(
+                "Failed to grade document (source=%s), including it by default: %s",
+                doc.metadata.get("source", "unknown"),
+                exc,
+            )
             filtered.append(doc)
     
     return {"documents": filtered}
@@ -67,12 +86,16 @@ def generate_answer(state: AgentState, memory: AgentMemory) -> dict:
     chain = RAG_PROMPT | llm | StrOutputParser()
     
     tokens = []
-    for chunk in chain.stream({
-        "context": context,
-        "chat_history": memory.get_history(),
-        "question": state["question"]
-    }):
-        tokens.append(chunk)
+    try:
+        for chunk in chain.stream({
+            "context": context,
+            "chat_history": memory.get_history(),
+            "question": state["question"]
+        }):
+            tokens.append(chunk)
+    except Exception as exc:
+        logger.error("Answer generation failed: %s", exc)
+        raise RuntimeError(f"Answer generation failed: {exc}") from exc
     
     answer = "".join(tokens)
     memory.save_turn(state["question"], answer)
@@ -95,13 +118,25 @@ def grade_hallucination(state: AgentState) -> dict:
     Return only a float like 0.8"""
     
     context = "\n".join([d.page_content[:300] for d in state["documents"]])
-    result = get_llm().invoke(prompt.format(
-        context=context, answer=state["answer"]
-    ))
+
+    try:
+        result = get_llm().invoke(prompt.format(
+            context=context, answer=state["answer"]
+        ))
+    except Exception as exc:
+        logger.error("Hallucination grading failed, defaulting to 0.5: %s", exc)
+        return {
+            "hallucination_score": 0.5,
+            "retry_count": state.get("retry_count", 0)
+        }
     
     try:
         score = float(result.content.strip())
     except ValueError:
+        logger.warning(
+            "Could not parse hallucination score from LLM response: %r, defaulting to 0.5",
+            result.content.strip(),
+        )
         score = 0.5
     
     return {
