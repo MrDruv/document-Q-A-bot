@@ -7,9 +7,12 @@ from retriever import RAGRetriever
 from prompts import RAG_PROMPT, REWRITER_PROMPT
 from memory import AgentMemory
 from config import cfg
+import re
+from langsmith import traceable
 
 # ─── Node Implementations ───────────────────────────────────────────
 
+@traceable
 def rewrite_query(state: AgentState) -> dict:
     """
     Node 1: Rewrite the raw STT transcript for better retrieval.
@@ -20,7 +23,7 @@ def rewrite_query(state: AgentState) -> dict:
     rewritten = chain.invoke({"question": state["question"]})
     return {"rewritten_query": rewritten}
 
-
+@traceable
 def retrieve_documents(state: AgentState, retriever: RAGRetriever) -> dict:
     """
     Node 2: Two-stage retrieval using the rewritten query.
@@ -29,7 +32,7 @@ def retrieve_documents(state: AgentState, retriever: RAGRetriever) -> dict:
     docs = retriever.retrieve(state["rewritten_query"])
     return {"documents": docs}
 
-
+@traceable
 def grade_documents(state: AgentState) -> dict:
     """
     Node 3: Filter docs below relevance threshold.
@@ -53,6 +56,7 @@ def grade_documents(state: AgentState) -> dict:
     return {"documents": filtered}
 
 
+@traceable
 def generate_answer(state: AgentState, memory: AgentMemory) -> dict:
     """
     Node 4: Generate a streaming answer using retrieved context.
@@ -88,46 +92,70 @@ def generate_answer(state: AgentState, memory: AgentMemory) -> dict:
     }
 
 
+@traceable
 def grade_hallucination(state: AgentState) -> dict:
-    """
-    Node 5: Check if the answer is grounded in the documents.
-    Returns a score; the edge condition decides whether to retry.
-    """
+    """Check whether the generated answer is grounded in retrieved documents."""
     llm = ChatGroq(model=cfg.llm_model, temperature=0)
-    prompt = """Given the context and answer, rate if the answer is fully 
-    supported by the context. Score 0.0 (not supported) to 1.0 (fully supported).
-    Context: {context}
-    Answer: {answer}
-    Return only a float like 0.8"""
-    
-    context = "\n".join([d.page_content[:300] for d in state["documents"]])
-    result = llm.invoke(prompt.format(
-        context=context, answer=state["answer"]
-    ))
-    
-    try:
-        score = float(result.content.strip())
-    except ValueError:
-        score = 0.5
-    
+
+    prompt = """You are a strict grounding evaluator.
+    Check whether the answer is supported only by the given context.
+
+    Score:
+    1.0 = fully supported
+    0.5 = partially supported
+    0.0 = not supported
+
+    Context:
+    {context}
+
+    Answer:
+    {answer}
+
+    Return only one number between 0.0 and 1.0."""
+
+    context = "\n\n".join([d.page_content[:700] for d in state["documents"]])
+    result = llm.invoke(prompt.format(context=context, answer=state["answer"]))
+
+    match = re.search(r"\b(?:0(?:\.\d+)?|1(?:\.0+)?)\b", result.content)
+    score = float(match.group()) if match else 0.0
+    score = max(0.0, min(1.0, score))
+
+    print(f"[HALLUCINATION] Score: {score}")
+    print(f"[HALLUCINATION] Retry count: {state.get('retry_count', 0)}")
+    print(f"[HALLUCINATION] Threshold: {cfg.hallucination_threshold}")
+
     return {
-        "hallucination_score": score,
-        "retry_count": state.get("retry_count", 0)
+    "hallucination_score": score,
+    "retry_count": state.get("retry_count", 0)
     }
+
+
+@traceable
+def increment_retry(state: AgentState) -> dict:
+    """Increase retry count before looping back to retrieval."""
+    new_count = state.get("retry_count", 0) + 1
+    print(f"[INCREMENT_RETRY] retry_count: {new_count}")
+    return {"retry_count": new_count}
 
 
 # ─── Edge Conditions ────────────────────────────────────────────────
 
+@traceable
 def should_retry(state: AgentState) -> str:
-    """
-    Conditional edge: retry retrieval if hallucination score is low,
-    but cap at 2 retries to avoid infinite loops.
-    """
-    if state["hallucination_score"] < 0.7 and state["retry_count"] < 2:
+    """Decide whether to retry retrieval or finish."""
+    print(f"[SHOULD_RETRY] Score: {state['hallucination_score']} | Retry: {state['retry_count']} | Max: {cfg.max_retries}")
+
+    if (
+        state["hallucination_score"] < cfg.hallucination_threshold
+        and state["retry_count"] < cfg.max_retries
+    ):
+        print("[SHOULD_RETRY] → retrying")
         return "retry"
+    print("[SHOULD_RETRY] → proceeding")
     return "proceed"
 
 
+@traceable
 def has_documents(state: AgentState) -> str:
     """
     Conditional edge: if no relevant docs found, generate a 
@@ -145,16 +173,19 @@ def build_graph(retriever: RAGRetriever, memory: AgentMemory) -> StateGraph:
     inject dependencies via closures.
     """
     graph = StateGraph(AgentState)
-    
+
     # Add nodes
-    graph.add_node("rewrite",   rewrite_query)
-    graph.add_node("retrieve",  lambda s: retrieve_documents(s, retriever))
-    graph.add_node("grade_docs",  grade_documents)
-    graph.add_node("generate",  lambda s: generate_answer(s, memory))
+    graph.add_node("rewrite", rewrite_query)
+    graph.add_node("retrieve", lambda s: retrieve_documents(s, retriever))
+    graph.add_node("grade_docs", grade_documents)
+    graph.add_node("generate", lambda s: generate_answer(s, memory))
     graph.add_node("grade_hallucination", grade_hallucination)
-    graph.add_node("no_docs",   lambda s: {
+    graph.add_node("increment_retry", increment_retry)
+    graph.add_node("no_docs", lambda s: {
         "answer": "I couldn't find relevant information for that question.",
-        "answer_tokens": ["I couldn't find relevant information."]
+        "answer_tokens": ["I couldn't find relevant information."],
+        "hallucination_score": -1.0,
+        "retry_count": s.get("retry_count", 0)
     })
     
     # Define the flow
@@ -172,10 +203,11 @@ def build_graph(retriever: RAGRetriever, memory: AgentMemory) -> StateGraph:
     
     # Conditional: retry or finish?
     graph.add_conditional_edges("grade_hallucination", should_retry, {
-        "retry": "retrieve",     # loop back with higher retry count
+        "retry": "increment_retry",     # loop back with higher retry count
         "proceed": END
     })
     
+    graph.add_edge("increment_retry", "retrieve")
     graph.add_edge("no_docs", END)
     
     return graph.compile()

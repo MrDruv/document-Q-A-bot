@@ -19,21 +19,16 @@
     --sh-d: rgb(163,177,198,0.6);
     --sh-l: rgba(255,255,255,0.5);
   }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--fg); min-height: 100vh; padding: 1.5rem; }
   h1,h2,h3 { font-family: 'Plus Jakarta Sans', sans-serif; }
-  .ext      { box-shadow: 9px 9px 16px var(--sh-d), -9px -9px 16px var(--sh-l); }
-  .inset    { box-shadow: inset 6px 6px 10px var(--sh-d), inset -6px -6px 10px var(--sh-l); }
-  .inset-deep { box-shadow: inset 10px 10px 20px var(--sh-d), inset -10px -10px 20px var(--sh-l); }
-  .ext-sm   { box-shadow: 5px 5px 10px var(--sh-d), -5px -5px 10px var(--sh-l); }
 
   .container { max-width: 1300px; margin: 0 auto; }
 
-  /* Header */
   .header { text-align: center; margin-bottom: 2rem; }
   .header h1 { font-size: clamp(1.5rem,4vw,2.2rem); font-weight: 800; letter-spacing: -0.03em; color: var(--fg); }
   .header p { color: var(--muted); font-size: 0.875rem; margin-top: 0.3rem; }
 
-  /* 3-column grid */
   .grid { display: grid; grid-template-columns: 300px 1fr 340px; gap: 1.5rem; }
   @media(max-width:1024px) { .grid { grid-template-columns: 1fr 1fr; } }
   @media(max-width:680px)  { .grid { grid-template-columns: 1fr; } body { padding: 1rem; } }
@@ -41,45 +36,25 @@
   .card { background: var(--bg); border-radius: 28px; padding: 1.5rem; box-shadow: 9px 9px 16px var(--sh-d), -9px -9px 16px var(--sh-l); }
   .card-title { font-size: 0.9rem; font-weight: 700; margin-bottom: 1rem; color: var(--fg); display: flex; align-items: center; gap: 0.5rem; }
 
-  /* ── PIPELINE PANEL (LEFT) ── */
+  /* Pipeline */
   .pipeline { display: flex; flex-direction: column; gap: 0; }
+  .pipe-step { display: flex; align-items: flex-start; gap: 0.75rem; padding: 0.6rem 0.75rem; border-radius: 14px; transition: all 300ms ease-out; position: relative; }
+  .pipe-step.idle    { opacity: 0.45; }
+  .pipe-step.waiting { opacity: 0.6; }
+  .pipe-step.active  { background: var(--bg); box-shadow: 5px 5px 10px var(--sh-d), -5px -5px 10px var(--sh-l); opacity: 1; }
+  .pipe-step.done    { opacity: 1; }
+  .pipe-step.error   { opacity: 1; }
 
-  .pipe-step {
-    display: flex; align-items: flex-start; gap: 0.75rem;
-    padding: 0.6rem 0.75rem;
-    border-radius: 14px;
-    transition: all 300ms ease-out;
-    position: relative;
-  }
-  .pipe-step.idle     { opacity: 0.45; }
-  .pipe-step.waiting  { opacity: 0.6; }
-  .pipe-step.active   { background: var(--bg); box-shadow: 5px 5px 10px var(--sh-d), -5px -5px 10px var(--sh-l); opacity: 1; }
-  .pipe-step.done     { opacity: 1; }
-  .pipe-step.error    { opacity: 1; }
-
-  .pipe-connector {
-    width: 2px; height: 18px;
-    margin: 0 0 0 22px;
-    border-radius: 2px;
-    background: var(--sh-d);
-    transition: background 300ms;
-  }
-  .pipe-connector.done { background: var(--teal); }
+  .pipe-connector { width: 2px; height: 18px; margin: 0 0 0 22px; border-radius: 2px; background: var(--sh-d); transition: background 300ms; }
+  .pipe-connector.done   { background: var(--teal); }
   .pipe-connector.active { background: var(--accent); }
+  .pipe-connector.retry  { background: var(--danger); }
 
-  .pipe-icon {
-    width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 0.9rem; font-weight: 700;
-    transition: all 300ms ease-out;
-    box-shadow: 3px 3px 6px var(--sh-d), -3px -3px 6px var(--sh-l);
-    background: var(--bg);
-    color: var(--muted);
-  }
-  .pipe-step.active .pipe-icon  { background: var(--accent); color: #fff; box-shadow: 0 0 12px rgba(108,99,255,0.4); animation: pulse-icon 1.2s ease-in-out infinite; }
-  .pipe-step.done   .pipe-icon  { background: var(--teal);   color: #fff; box-shadow: 0 0 8px rgba(56,178,172,0.4); animation: none; }
-  .pipe-step.error  .pipe-icon  { background: var(--danger);  color: #fff; }
-
+  .pipe-icon { width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 0.9rem; font-weight: 700; transition: all 300ms ease-out; box-shadow: 3px 3px 6px var(--sh-d), -3px -3px 6px var(--sh-l); background: var(--bg); color: var(--muted); }
+  .pipe-step.active .pipe-icon { background: var(--accent); color: #fff; box-shadow: 0 0 12px rgba(108,99,255,0.4); animation: pulse-icon 1.2s ease-in-out infinite; }
+  .pipe-step.done   .pipe-icon { background: var(--teal);   color: #fff; box-shadow: 0 0 8px rgba(56,178,172,0.4); animation: none; }
+  .pipe-step.error  .pipe-icon { background: var(--danger);  color: #fff; animation: none; }
+  .pipe-step.retry  .pipe-icon { background: var(--warn);    color: #fff; animation: pulse-icon 1.2s ease-in-out infinite; }
   @keyframes pulse-icon { 0%,100% { transform: scale(1); } 50% { transform: scale(1.1); } }
 
   .pipe-info { flex: 1; }
@@ -87,111 +62,64 @@
   .pipe-desc  { font-size: 0.7rem; color: var(--muted); margin-top: 2px; font-family: 'JetBrains Mono', monospace; }
   .pipe-step.active .pipe-label { color: var(--accent); }
   .pipe-step.done   .pipe-label { color: var(--teal); }
+  .pipe-step.error  .pipe-label { color: var(--danger); }
+  .pipe-step.retry  .pipe-label { color: var(--warn); }
 
-  .pipe-badge {
-    font-size: 0.65rem; font-weight: 500; padding: 2px 7px; border-radius: 20px;
-    flex-shrink: 0; align-self: center;
-  }
+  .pipe-badge { font-size: 0.65rem; font-weight: 500; padding: 2px 7px; border-radius: 20px; flex-shrink: 0; align-self: center; }
   .badge-idle    { background: var(--bg); color: var(--muted); box-shadow: 3px 3px 6px var(--sh-d), -3px -3px 6px var(--sh-l); }
   .badge-active  { background: var(--accent); color: #fff; animation: badge-pulse 1s ease-in-out infinite; }
   .badge-done    { background: var(--teal); color: #fff; }
   .badge-error   { background: var(--danger); color: #fff; }
+  .badge-retry   { background: var(--warn); color: #fff; animation: badge-pulse 1s ease-in-out infinite; }
+  .badge-waiting { background: var(--warn); color: #fff; opacity: 0.7; }
   @keyframes badge-pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.6; } }
 
-  /* Live log */
-  .log-box {
-    margin-top: 1rem;
-    border-radius: 12px;
-    padding: 0.75rem;
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 0.65rem;
-    color: var(--muted);
-    min-height: 60px;
-    max-height: 100px;
-    overflow-y: auto;
-    box-shadow: inset 6px 6px 10px var(--sh-d), inset -6px -6px 10px var(--sh-l);
-    line-height: 1.6;
-  }
+  .log-box { margin-top: 1rem; border-radius: 12px; padding: 0.75rem; font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; color: var(--muted); min-height: 60px; max-height: 120px; overflow-y: auto; box-shadow: inset 6px 6px 10px var(--sh-d), inset -6px -6px 10px var(--sh-l); line-height: 1.8; }
   .log-line { display: flex; gap: 0.4rem; }
   .log-time { color: var(--accent); flex-shrink: 0; }
   .log-line.success .log-msg { color: var(--teal); }
   .log-line.error   .log-msg { color: var(--danger); }
+  .log-line.warn    .log-msg { color: var(--warn); }
 
-  /* ── MIDDLE PANEL ── */
+  /* Chat */
   .chat-area { display: flex; flex-direction: column; gap: 1rem; }
-
-  .chat-container {
-    border-radius: 20px; padding: 1.25rem;
-    min-height: 340px; max-height: 420px;
-    overflow-y: auto; display: flex; flex-direction: column; gap: 0.75rem;
-    box-shadow: inset 10px 10px 20px var(--sh-d), inset -10px -10px 20px var(--sh-l);
-  }
+  .chat-container { border-radius: 20px; padding: 1.25rem; min-height: 340px; max-height: 420px; overflow-y: auto; display: flex; flex-direction: column; gap: 0.75rem; box-shadow: inset 10px 10px 20px var(--sh-d), inset -10px -10px 20px var(--sh-l); }
   .chat-empty { color: var(--muted); font-size: 0.875rem; text-align: center; margin: auto; }
 
   .bubble-wrap { display: flex; flex-direction: column; gap: 3px; }
   .bubble-wrap.user  { align-items: flex-end; }
   .bubble-wrap.agent { align-items: flex-start; }
   .bubble-label { font-size: 0.68rem; color: var(--muted); padding: 0 0.4rem; }
-  .bubble {
-    max-width: 82%; border-radius: 18px; padding: 0.65rem 1rem;
-    font-size: 0.875rem; line-height: 1.55;
-    box-shadow: 5px 5px 10px var(--sh-d), -5px -5px 10px var(--sh-l);
-  }
-  .bubble.user  { background: var(--accent); color: #fff; border-bottom-right-radius: 5px; }
-  .bubble.agent { background: var(--bg); color: var(--fg); border-bottom-left-radius: 5px; }
+  .bubble { max-width: 82%; border-radius: 18px; padding: 0.65rem 1rem; font-size: 0.875rem; line-height: 1.55; box-shadow: 5px 5px 10px var(--sh-d), -5px -5px 10px var(--sh-l); }
+  .bubble.user    { background: var(--accent); color: #fff; border-bottom-right-radius: 5px; }
+  .bubble.agent   { background: var(--bg); color: var(--fg); border-bottom-left-radius: 5px; }
   .bubble.thinking { color: var(--muted); font-style: italic; }
 
-  /* Input row */
   .input-row { display: flex; gap: 0.6rem; }
-  .text-input {
-    flex: 1; background: var(--bg); border: none; border-radius: 14px;
-    padding: 0.7rem 1.1rem; font-family: 'DM Sans', sans-serif; font-size: 0.875rem;
-    color: var(--fg); outline: none;
-    box-shadow: inset 6px 6px 10px var(--sh-d), inset -6px -6px 10px var(--sh-l);
-    transition: box-shadow 300ms;
-  }
+  .text-input { flex: 1; background: var(--bg); border: none; border-radius: 14px; padding: 0.7rem 1.1rem; font-family: 'DM Sans', sans-serif; font-size: 0.875rem; color: var(--fg); outline: none; box-shadow: inset 6px 6px 10px var(--sh-d), inset -6px -6px 10px var(--sh-l); transition: box-shadow 300ms; }
   .text-input:focus { box-shadow: inset 10px 10px 20px var(--sh-d), inset -10px -10px 20px var(--sh-l); }
   .text-input::placeholder { color: #A0AEC0; }
 
-  /* Tabs */
   .tabs { display: flex; gap: 0.4rem; }
-  .tab {
-    background: var(--bg); border: none; border-radius: 10px; padding: 0.45rem 1.1rem;
-    font-family: 'DM Sans', sans-serif; font-size: 0.8rem; font-weight: 500;
-    color: var(--muted); cursor: pointer; transition: all 300ms ease-out;
-    box-shadow: 4px 4px 8px var(--sh-d), -4px -4px 8px var(--sh-l);
-  }
+  .tab { background: var(--bg); border: none; border-radius: 10px; padding: 0.45rem 1.1rem; font-family: 'DM Sans', sans-serif; font-size: 0.8rem; font-weight: 500; color: var(--muted); cursor: pointer; transition: all 300ms ease-out; box-shadow: 4px 4px 8px var(--sh-d), -4px -4px 8px var(--sh-l); }
   .tab.active { color: var(--accent); box-shadow: inset 4px 4px 8px var(--sh-d), inset -4px -4px 8px var(--sh-l); }
-
   .tab-content { display: none; }
   .tab-content.active { display: block; }
 
-  /* Voice panel */
   .voice-panel { text-align: center; padding: 0.5rem 0; }
-  .mic-btn {
-    width: 68px; height: 68px; border-radius: 50%; border: none; background: var(--bg);
-    font-size: 1.6rem; cursor: pointer; margin: 0.75rem auto; display: flex;
-    align-items: center; justify-content: center;
-    transition: all 300ms ease-out;
-    box-shadow: 9px 9px 16px var(--sh-d), -9px -9px 16px var(--sh-l);
-  }
+  .mic-btn { width: 68px; height: 68px; border-radius: 50%; border: none; background: var(--bg); font-size: 1.6rem; cursor: pointer; margin: 0.75rem auto; display: flex; align-items: center; justify-content: center; transition: all 300ms ease-out; box-shadow: 9px 9px 16px var(--sh-d), -9px -9px 16px var(--sh-l); }
   .mic-btn:hover { transform: translateY(-2px); box-shadow: 12px 12px 20px var(--sh-d), -12px -12px 20px var(--sh-l); }
   .mic-btn.listening { background: var(--accent); animation: pulse 1.2s ease-in-out infinite; box-shadow: 0 0 20px rgba(108,99,255,0.5); }
   @keyframes pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.08); } }
   .voice-status { color: var(--muted); font-size: 0.8rem; min-height: 1.2rem; }
-
   .toggle-row { display: flex; align-items: center; justify-content: center; gap: 0.6rem; margin-top: 0.5rem; font-size: 0.8rem; color: var(--muted); }
   .toggle { width: 40px; height: 22px; border-radius: 11px; background: var(--bg); box-shadow: inset 3px 3px 6px var(--sh-d), inset -3px -3px 6px var(--sh-l); position: relative; cursor: pointer; border: none; flex-shrink: 0; transition: background 300ms; }
   .toggle::after { content:''; position: absolute; width: 16px; height: 16px; border-radius: 50%; background: var(--bg); top: 3px; left: 3px; box-shadow: 3px 3px 6px var(--sh-d), -3px -3px 6px var(--sh-l); transition: transform 300ms ease-out; }
   .toggle.on { background: var(--accent); }
   .toggle.on::after { transform: translateX(18px); }
 
-  /* ── RIGHT PANEL ── */
-  .upload-zone {
-    background: var(--bg); border-radius: 14px; padding: 1.5rem 1rem;
-    text-align: center; cursor: pointer; position: relative;
-    transition: all 300ms; box-shadow: inset 6px 6px 10px var(--sh-d), inset -6px -6px 10px var(--sh-l);
-  }
+  /* Right panel */
+  .upload-zone { background: var(--bg); border-radius: 14px; padding: 1.5rem 1rem; text-align: center; cursor: pointer; position: relative; transition: all 300ms; box-shadow: inset 6px 6px 10px var(--sh-d), inset -6px -6px 10px var(--sh-l); }
   .upload-zone input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
   .upload-zone .icon { font-size: 1.75rem; margin-bottom: 0.4rem; }
   .upload-zone p { color: var(--muted); font-size: 0.8rem; }
@@ -200,14 +128,7 @@
   .file-list { margin-top: 0.75rem; display: flex; flex-direction: column; gap: 0.4rem; max-height: 100px; overflow-y: auto; }
   .file-item { background: var(--bg); border-radius: 10px; padding: 0.4rem 0.75rem; font-size: 0.75rem; color: var(--muted); box-shadow: 4px 4px 8px var(--sh-d), -4px -4px 8px var(--sh-l); display: flex; align-items: center; gap: 0.4rem; }
 
-  /* Buttons */
-  .btn {
-    background: var(--bg); border: none; border-radius: 14px; padding: 0.65rem 1.25rem;
-    font-family: 'DM Sans', sans-serif; font-size: 0.85rem; font-weight: 500; color: var(--fg);
-    cursor: pointer; transition: all 300ms ease-out;
-    box-shadow: 9px 9px 16px var(--sh-d), -9px -9px 16px var(--sh-l);
-    width: 100%; margin-top: 0.75rem; display: flex; align-items: center; justify-content: center; gap: 0.4rem;
-  }
+  .btn { background: var(--bg); border: none; border-radius: 14px; padding: 0.65rem 1.25rem; font-family: 'DM Sans', sans-serif; font-size: 0.85rem; font-weight: 500; color: var(--fg); cursor: pointer; transition: all 300ms ease-out; box-shadow: 9px 9px 16px var(--sh-d), -9px -9px 16px var(--sh-l); width: 100%; margin-top: 0.75rem; display: flex; align-items: center; justify-content: center; gap: 0.4rem; }
   .btn:hover { transform: translateY(-1px); box-shadow: 12px 12px 20px var(--sh-d), -12px -12px 20px var(--sh-l); }
   .btn:active { transform: translateY(0.5px); box-shadow: inset 3px 3px 6px var(--sh-d), inset -3px -3px 6px var(--sh-l); }
   .btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
@@ -218,14 +139,7 @@
 
   .divider { height: 1px; background: linear-gradient(to right, transparent, var(--sh-d), transparent); margin: 1rem 0; }
 
-  /* Toast */
-  .toast {
-    position: fixed; bottom: 1.5rem; right: 1.5rem;
-    background: var(--bg); border-radius: 14px; padding: 0.75rem 1.25rem;
-    font-size: 0.8rem; color: var(--fg);
-    box-shadow: 12px 12px 20px var(--sh-d), -12px -12px 20px var(--sh-l);
-    transform: translateY(80px); opacity: 0; transition: all 400ms ease-out; z-index: 999;
-  }
+  .toast { position: fixed; bottom: 1.5rem; right: 1.5rem; background: var(--bg); border-radius: 14px; padding: 0.75rem 1.25rem; font-size: 0.8rem; color: var(--fg); box-shadow: 12px 12px 20px var(--sh-d), -12px -12px 20px var(--sh-l); transform: translateY(80px); opacity: 0; transition: all 400ms ease-out; z-index: 999; }
   .toast.show { transform: translateY(0); opacity: 1; }
   .toast.success { color: var(--teal); }
   .toast.error   { color: var(--danger); }
@@ -245,179 +159,129 @@
 
   <div class="grid">
 
-    <!-- ── LEFT: PIPELINE VISUALIZER ── -->
+    <!-- LEFT: PIPELINE VISUALIZER -->
     <div class="card" style="align-self: start;">
       <div class="card-title">⚙️ Live Pipeline</div>
-
       <div class="pipeline" id="pipeline">
 
-        <!-- INDEXING PIPELINE -->
         <div style="font-size:0.68rem;font-weight:600;color:var(--muted);letter-spacing:0.08em;margin-bottom:0.5rem;">INDEXING</div>
 
         <div class="pipe-step idle" id="step-upload">
           <div class="pipe-icon">📄</div>
-          <div class="pipe-info">
-            <div class="pipe-label">Document Upload</div>
-            <div class="pipe-desc">PDF → data/</div>
-          </div>
+          <div class="pipe-info"><div class="pipe-label">Document Upload</div><div class="pipe-desc">PDF → data/</div></div>
           <div class="pipe-badge badge-idle" id="badge-upload">idle</div>
         </div>
         <div class="pipe-connector" id="conn-1"></div>
 
         <div class="pipe-step idle" id="step-load">
           <div class="pipe-icon">📖</div>
-          <div class="pipe-info">
-            <div class="pipe-label">Document Loader</div>
-            <div class="pipe-desc">PyPDFLoader → pages</div>
-          </div>
+          <div class="pipe-info"><div class="pipe-label">Document Loader</div><div class="pipe-desc">PyPDFLoader → pages</div></div>
           <div class="pipe-badge badge-idle" id="badge-load">idle</div>
         </div>
         <div class="pipe-connector" id="conn-2"></div>
 
         <div class="pipe-step idle" id="step-chunk">
           <div class="pipe-icon">✂️</div>
-          <div class="pipe-info">
-            <div class="pipe-label">Text Splitter</div>
-            <div class="pipe-desc">RecursiveCharacterTextSplitter</div>
-          </div>
+          <div class="pipe-info"><div class="pipe-label">Text Splitter</div><div class="pipe-desc">RecursiveCharacterTextSplitter</div></div>
           <div class="pipe-badge badge-idle" id="badge-chunk">idle</div>
         </div>
         <div class="pipe-connector" id="conn-3"></div>
 
         <div class="pipe-step idle" id="step-embed">
           <div class="pipe-icon">🧮</div>
-          <div class="pipe-info">
-            <div class="pipe-label">Embeddings</div>
-            <div class="pipe-desc">all-MiniLM-L6-v2</div>
-          </div>
+          <div class="pipe-info"><div class="pipe-label">Embeddings</div><div class="pipe-desc">all-MiniLM-L6-v2</div></div>
           <div class="pipe-badge badge-idle" id="badge-embed">idle</div>
         </div>
         <div class="pipe-connector" id="conn-4"></div>
 
         <div class="pipe-step idle" id="step-faiss">
           <div class="pipe-icon">🗄️</div>
-          <div class="pipe-info">
-            <div class="pipe-label">FAISS Index</div>
-            <div class="pipe-desc">MMR vector store</div>
-          </div>
+          <div class="pipe-info"><div class="pipe-label">FAISS Index</div><div class="pipe-desc">MMR vector store</div></div>
           <div class="pipe-badge badge-idle" id="badge-faiss">idle</div>
         </div>
         <div class="pipe-connector" id="conn-5"></div>
 
         <div class="pipe-step idle" id="step-rerank">
           <div class="pipe-icon">🎯</div>
-          <div class="pipe-info">
-            <div class="pipe-label">Cross-Encoder Reranker</div>
-            <div class="pipe-desc">ms-marco-MiniLM-L-6-v2</div>
-          </div>
+          <div class="pipe-info"><div class="pipe-label">Cross-Encoder Reranker</div><div class="pipe-desc">ms-marco-MiniLM-L-6-v2</div></div>
           <div class="pipe-badge badge-idle" id="badge-rerank">idle</div>
         </div>
         <div class="pipe-connector" id="conn-6"></div>
 
         <div class="pipe-step idle" id="step-graph">
           <div class="pipe-icon">🕸️</div>
-          <div class="pipe-info">
-            <div class="pipe-label">LangGraph Build</div>
-            <div class="pipe-desc">StateGraph → compile</div>
-          </div>
+          <div class="pipe-info"><div class="pipe-label">LangGraph Build</div><div class="pipe-desc">StateGraph → compile</div></div>
           <div class="pipe-badge badge-idle" id="badge-graph">idle</div>
         </div>
 
         <div class="divider"></div>
 
-        <!-- QUERY PIPELINE -->
         <div style="font-size:0.68rem;font-weight:600;color:var(--muted);letter-spacing:0.08em;margin-bottom:0.5rem;">QUERY (per question)</div>
 
         <div class="pipe-step idle" id="step-stt">
           <div class="pipe-icon">🎙️</div>
-          <div class="pipe-info">
-            <div class="pipe-label">STT</div>
-            <div class="pipe-desc">faster-whisper → text</div>
-          </div>
+          <div class="pipe-info"><div class="pipe-label">STT</div><div class="pipe-desc">faster-whisper → text</div></div>
           <div class="pipe-badge badge-idle" id="badge-stt">idle</div>
         </div>
         <div class="pipe-connector" id="conn-7"></div>
 
         <div class="pipe-step idle" id="step-rewrite">
           <div class="pipe-icon">✏️</div>
-          <div class="pipe-info">
-            <div class="pipe-label">Query Rewriter</div>
-            <div class="pipe-desc">LLM → optimised query</div>
-          </div>
+          <div class="pipe-info"><div class="pipe-label">Query Rewriter</div><div class="pipe-desc">LLM → optimised query</div></div>
           <div class="pipe-badge badge-idle" id="badge-rewrite">idle</div>
         </div>
         <div class="pipe-connector" id="conn-8"></div>
 
         <div class="pipe-step idle" id="step-retrieve">
           <div class="pipe-icon">🔍</div>
-          <div class="pipe-info">
-            <div class="pipe-label">Retrieval</div>
-            <div class="pipe-desc">FAISS → rerank → top-k</div>
-          </div>
+          <div class="pipe-info"><div class="pipe-label">Retrieval</div><div class="pipe-desc">FAISS → rerank → top-k</div></div>
           <div class="pipe-badge badge-idle" id="badge-retrieve">idle</div>
         </div>
         <div class="pipe-connector" id="conn-9"></div>
 
         <div class="pipe-step idle" id="step-grade">
           <div class="pipe-icon">🔎</div>
-          <div class="pipe-info">
-            <div class="pipe-label">Doc Grader</div>
-            <div class="pipe-desc">filter irrelevant chunks</div>
-          </div>
+          <div class="pipe-info"><div class="pipe-label">Doc Grader</div><div class="pipe-desc">filter irrelevant chunks</div></div>
           <div class="pipe-badge badge-idle" id="badge-grade">idle</div>
         </div>
         <div class="pipe-connector" id="conn-10"></div>
 
         <div class="pipe-step idle" id="step-generate">
           <div class="pipe-icon">🤖</div>
-          <div class="pipe-info">
-            <div class="pipe-label">Generator</div>
-            <div class="pipe-desc">Groq llama-3.3-70b</div>
-          </div>
+          <div class="pipe-info"><div class="pipe-label">Generator</div><div class="pipe-desc">Groq llama-3.3-70b</div></div>
           <div class="pipe-badge badge-idle" id="badge-generate">idle</div>
         </div>
         <div class="pipe-connector" id="conn-11"></div>
 
         <div class="pipe-step idle" id="step-halluc">
           <div class="pipe-icon">🛡️</div>
-          <div class="pipe-info">
-            <div class="pipe-label">Hallucination Guard</div>
-            <div class="pipe-desc">score vs. sources</div>
-          </div>
+          <div class="pipe-info"><div class="pipe-label">Hallucination Guard</div><div class="pipe-desc">score vs. sources</div></div>
           <div class="pipe-badge badge-idle" id="badge-halluc">idle</div>
         </div>
         <div class="pipe-connector" id="conn-12"></div>
 
         <div class="pipe-step idle" id="step-tts">
           <div class="pipe-icon">🔊</div>
-          <div class="pipe-info">
-            <div class="pipe-label">TTS Output</div>
-            <div class="pipe-desc">pyttsx3 → speaker</div>
-          </div>
+          <div class="pipe-info"><div class="pipe-label">TTS Output</div><div class="pipe-desc">pyttsx3 → speaker</div></div>
           <div class="pipe-badge badge-idle" id="badge-tts">idle</div>
         </div>
-      </div>
 
-      <!-- Live log -->
+      </div>
       <div style="font-size:0.7rem;font-weight:600;color:var(--muted);margin-top:1rem;margin-bottom:0.3rem;">📋 Live Log</div>
       <div class="log-box" id="logBox"></div>
     </div>
 
-    <!-- ── MIDDLE: CHAT ── -->
+    <!-- MIDDLE: CHAT -->
     <div class="card chat-area">
       <div class="card-title">💬 Conversation</div>
-
       <div class="chat-container" id="chatContainer">
         <div class="chat-empty" id="chatEmpty">Load documents and ask a question to begin.</div>
       </div>
-
       <div class="divider"></div>
-
       <div class="tabs">
         <button class="tab active" data-tab="voice">🎙️ Voice</button>
         <button class="tab" data-tab="text">⌨️ Text</button>
       </div>
-
       <div class="tab-content active" id="tab-voice">
         <div class="voice-panel">
           <button class="mic-btn" id="micBtn">🎤</button>
@@ -428,7 +292,6 @@
           </div>
         </div>
       </div>
-
       <div class="tab-content" id="tab-text">
         <div class="input-row" style="margin-top:1rem;">
           <input type="text" class="text-input" id="textInput" placeholder="Ask a question about your documents..."/>
@@ -437,7 +300,7 @@
       </div>
     </div>
 
-    <!-- ── RIGHT: UPLOAD ── -->
+    <!-- RIGHT: UPLOAD + STATS -->
     <div style="display:flex;flex-direction:column;gap:1.25rem;">
       <div class="card">
         <div class="card-title">📂 Documents</div>
@@ -449,7 +312,6 @@
         <div class="file-list" id="fileList"></div>
         <button class="btn btn-accent" id="loadBtn" disabled>⚡ Index Documents</button>
       </div>
-
       <div class="card">
         <div class="card-title">📊 Quick Stats</div>
         <div style="display:flex;flex-direction:column;gap:0.5rem;font-size:0.8rem;">
@@ -469,6 +331,14 @@
             <span style="color:var(--muted)">Last answer time</span>
             <span id="statTime" style="font-weight:600;color:var(--fg)">—</span>
           </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <span style="color:var(--muted)">Retries triggered</span>
+            <span id="statRetries" style="font-weight:600;color:var(--warn)">0</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <span style="color:var(--muted)">Last halluc. score</span>
+            <span id="statScore" style="font-weight:600;color:var(--fg)">—</span>
+          </div>
         </div>
         <div class="divider"></div>
         <button class="btn btn-sm btn-danger" id="clearBtn" disabled style="width:100%;margin-top:0;">🗑️ Clear Conversation</button>
@@ -483,36 +353,25 @@
 <script>
 const API = 'http://localhost:8000';
 
-// ── State ──────────────────────────────────────────────────────────
 const state = {
   files: [], loaded: false, listening: false,
-  ttsOn: true, history: [], recognition: null, questionCount: 0
+  ttsOn: true, history: [], recognition: null,
+  questionCount: 0, totalRetries: 0
 };
 
-// ── Pipeline step helper ───────────────────────────────────────────
-// status: 'idle' | 'waiting' | 'active' | 'done' | 'error'
+// ── Pipeline helpers ───────────────────────────────────────────────
 function setStep(id, status, desc = null, badgeText = null) {
-  const step   = document.getElementById(`step-${id}`);
-  const badge  = document.getElementById(`badge-${id}`);
+  const step  = document.getElementById(`step-${id}`);
+  const badge = document.getElementById(`badge-${id}`);
   if (!step || !badge) return;
-
   step.className  = `pipe-step ${status}`;
   badge.className = `pipe-badge badge-${status === 'waiting' ? 'idle' : status}`;
   badge.textContent = badgeText || status;
-
-  if (desc) {
-    const d = step.querySelector('.pipe-desc');
-    if (d) d.textContent = desc;
-  }
-
-  // connector before this step
-  const connMap = {
-    load:'1', chunk:'2', embed:'3', faiss:'4', rerank:'5', graph:'6',
-    rewrite:'7', retrieve:'8', grade:'9', generate:'10', halluc:'11', tts:'12'
-  };
+  if (desc) { const d = step.querySelector('.pipe-desc'); if (d) d.textContent = desc; }
+  const connMap = { load:'1', chunk:'2', embed:'3', faiss:'4', rerank:'5', graph:'6', rewrite:'7', retrieve:'8', grade:'9', generate:'10', halluc:'11', tts:'12' };
   if (connMap[id]) {
     const conn = document.getElementById(`conn-${connMap[id]}`);
-    if (conn) conn.className = `pipe-connector ${status === 'done' ? 'done' : status === 'active' ? 'active' : ''}`;
+    if (conn) conn.className = `pipe-connector ${status === 'done' ? 'done' : status === 'active' ? 'active' : status === 'retry' ? 'retry' : status === 'error' ? 'retry' : ''}`;
   }
 }
 
@@ -520,17 +379,14 @@ function resetQuerySteps() {
   ['stt','rewrite','retrieve','grade','generate','halluc','tts'].forEach(s => {
     setStep(s, 'idle', null, 'idle');
     const connMap = { rewrite:'7', retrieve:'8', grade:'9', generate:'10', halluc:'11', tts:'12' };
-    if (connMap[s]) {
-      const c = document.getElementById(`conn-${connMap[s]}`);
-      if (c) c.className = 'pipe-connector';
-    }
+    if (connMap[s]) { const c = document.getElementById(`conn-${connMap[s]}`); if (c) c.className = 'pipe-connector'; }
   });
 }
 
-// ── Live log ───────────────────────────────────────────────────────
+// ── Log ────────────────────────────────────────────────────────────
 function log(msg, type = '') {
-  const box  = document.getElementById('logBox');
-  const now  = new Date().toLocaleTimeString('en-IN', { hour12: false, hour:'2-digit', minute:'2-digit', second:'2-digit' });
+  const box = document.getElementById('logBox');
+  const now = new Date().toLocaleTimeString('en-IN', { hour12:false, hour:'2-digit', minute:'2-digit', second:'2-digit' });
   const line = document.createElement('div');
   line.className = `log-line ${type}`;
   line.innerHTML = `<span class="log-time">[${now}]</span><span class="log-msg">${msg}</span>`;
@@ -542,10 +398,10 @@ function log(msg, type = '') {
 function showToast(msg, type = 'success') {
   const t = document.getElementById('toast');
   t.textContent = msg; t.className = `toast ${type} show`;
-  setTimeout(() => t.classList.remove('show'), 3000);
+  setTimeout(() => t.classList.remove('show'), 3500);
 }
 
-// ── File handling ──────────────────────────────────────────────────
+// ── Files ──────────────────────────────────────────────────────────
 const fileInput  = document.getElementById('fileInput');
 const fileList   = document.getElementById('fileList');
 const loadBtn    = document.getElementById('loadBtn');
@@ -571,114 +427,93 @@ uploadZone.addEventListener('drop', e => {
   renderFiles();
 });
 
-// ── Index documents ────────────────────────────────────────────────
+// ── Index ──────────────────────────────────────────────────────────
 loadBtn.addEventListener('click', async () => {
   if (!state.files.length) return;
-
   loadBtn.disabled = true;
   loadBtn.textContent = '⏳ Indexing...';
-
-  // Reset all index steps
   ['upload','load','chunk','embed','faiss','rerank','graph'].forEach(s => setStep(s, 'idle', null, 'idle'));
 
   const formData = new FormData();
   state.files.forEach(f => formData.append('files', f));
 
-  // Step 1: Upload
   setStep('upload', 'active', null, 'uploading');
   log(`Uploading ${state.files.length} file(s)...`);
 
-  // Simulate progressive steps while backend processes
-  // (backend does all at once; we animate with realistic delays)
   const steps = [
-    { id:'upload',  delay:0,    done:'load',   doneDelay:800,  label:'done',     desc:`${state.files.length} file(s) saved` },
-    { id:'load',    delay:800,  done:'chunk',  doneDelay:1800, label:'loading',  desc:'Reading pages...' },
-    { id:'chunk',   delay:1800, done:'embed',  doneDelay:3000, label:'splitting',desc:'Chunking text...' },
-    { id:'embed',   delay:3000, done:'faiss',  doneDelay:5000, label:'encoding', desc:'Generating vectors...' },
-    { id:'faiss',   delay:5000, done:'rerank', doneDelay:7000, label:'indexing', desc:'Building FAISS index...' },
-    { id:'rerank',  delay:7000, done:'graph',  doneDelay:8500, label:'loading',  desc:'Loading cross-encoder...' },
-    { id:'graph',   delay:8500, done:null,     doneDelay:null, label:'compiling',desc:'Compiling StateGraph...' },
+    { id:'upload', delay:0,    desc:`${state.files.length} file(s) saved` },
+    { id:'load',   delay:900,  desc:'Reading pages...' },
+    { id:'chunk',  delay:1800, desc:'Chunking text...' },
+    { id:'embed',  delay:3200, desc:'Generating vectors...' },
+    { id:'faiss',  delay:5000, desc:'Building FAISS index...' },
+    { id:'rerank', delay:7000, desc:'Loading cross-encoder...' },
+    { id:'graph',  delay:8500, desc:'Compiling StateGraph...' },
   ];
 
-  // Activate each step sequentially
   steps.forEach(s => {
-    setTimeout(() => {
-      setStep(s.id, 'active', s.desc, s.label);
-      log(`${s.id}: ${s.desc}`);
-    }, s.delay);
+    setTimeout(() => { setStep(s.id, 'active', s.desc, 'running'); log(`${s.id}: ${s.desc}`); }, s.delay);
   });
 
   try {
     const res  = await fetch(`${API}/upload`, { method: 'POST', body: formData });
     const data = await res.json();
-
     if (res.ok) {
-      // Mark all done
       setTimeout(() => {
         ['upload','load','chunk','embed','faiss','rerank','graph'].forEach(s => setStep(s, 'done', null, 'done'));
-        document.querySelectorAll('.pipe-connector').forEach(c => {
-          if (['conn-1','conn-2','conn-3','conn-4','conn-5','conn-6'].includes(c.id)) c.className = 'pipe-connector done';
+        ['conn-1','conn-2','conn-3','conn-4','conn-5','conn-6'].forEach(id => {
+          const c = document.getElementById(id); if (c) c.className = 'pipe-connector done';
         });
-
         state.loaded = true;
-        document.getElementById('statStatus').textContent  = 'Ready ✓';
-        document.getElementById('statStatus').style.color  = 'var(--teal)';
-        document.getElementById('statChunks').textContent  = data.chunks;
-        document.getElementById('clearBtn').disabled       = false;
-
+        document.getElementById('statStatus').textContent = 'Ready ✓';
+        document.getElementById('statStatus').style.color = 'var(--teal)';
+        document.getElementById('statChunks').textContent = data.chunks;
+        document.getElementById('clearBtn').disabled = false;
         log(`✓ Indexed ${data.chunks} chunks. Agent ready!`, 'success');
         showToast(`✅ ${data.chunks} chunks indexed — Agent ready!`);
         loadBtn.textContent = '⚡ Re-index';
-        loadBtn.disabled    = false;
+        loadBtn.disabled = false;
       }, 9500);
-    } else {
-      throw new Error('Upload failed');
-    }
-  } catch (err) {
+    } else { throw new Error(); }
+  } catch {
     ['upload','load','chunk','embed','faiss','rerank','graph'].forEach(s => setStep(s, 'idle'));
     log('❌ Failed to connect to API server', 'error');
     showToast('❌ Cannot connect to API server', 'error');
     loadBtn.textContent = '⚡ Index Documents';
-    loadBtn.disabled    = false;
+    loadBtn.disabled = false;
   }
 });
 
-// ── Ask question ───────────────────────────────────────────────────
+// ── Ask ────────────────────────────────────────────────────────────
 async function handleQuestion(question) {
-  if (!state.loaded)     { showToast('⚠️ Load documents first', 'error'); return; }
-  if (!question.trim())  return;
+  if (!state.loaded)    { showToast('⚠️ Load documents first', 'error'); return; }
+  if (!question.trim()) return;
 
   state.questionCount++;
   document.getElementById('statQuestions').textContent = state.questionCount;
 
   resetQuerySteps();
   addMessage('user', question);
-
   const t0 = Date.now();
 
-  // Animate query pipeline
-  setStep('stt',      'done',   'transcript ready',   'done');
+  setStep('stt', 'done', 'transcript ready', 'done');
   log(`You: "${question}"`);
 
   await delay(200);
-  setStep('rewrite',  'active', 'rewriting query...', 'running');
+  setStep('rewrite', 'active', 'rewriting query...', 'running');
   log('rewriter: optimising for retrieval...');
 
   const formData = new FormData();
   formData.append('question', question);
-
-  // Show thinking
   const thinking = addThinking();
 
   try {
-    // After small delay show retrieval step
     await delay(600);
     setStep('rewrite',  'done',   'query rewritten',    'done');
     setStep('retrieve', 'active', 'searching FAISS...', 'running');
     log('retriever: FAISS MMR search → reranking...');
 
     await delay(700);
-    setStep('retrieve', 'done',   'top-k docs found',   'done');
+    setStep('retrieve', 'done',   'top-k docs found',  'done');
     setStep('grade',    'active', 'grading chunks...',  'running');
     log('grader: filtering irrelevant docs...');
 
@@ -690,12 +525,86 @@ async function handleQuestion(question) {
     const res  = await fetch(`${API}/ask`, { method: 'POST', body: formData });
     const data = await res.json();
 
-    setStep('generate', 'done',   'answer generated',   'done');
-    setStep('halluc',   'active', 'checking sources...','running');
-    log('hallucination guard: verifying against docs...');
+    setStep('generate', 'done', 'answer generated', 'done');
 
-    await delay(400);
-    setStep('halluc',   'done',   'grounded ✓',         'done');
+    const score   = data.hallucination_score ?? 1.0;
+    const retries = data.retry_count ?? 0;
+    const noDocs  = data.no_docs ?? false;
+
+    if (noDocs) {
+    setStep('halluc', 'idle', 'skipped — no docs', 'skipped');
+    log('hallucination guard: skipped — no relevant docs found');
+    } else if (retries > 0) {
+    for (let i = 0; i < retries; i++) {
+        setStep('generate', 'retry', `retry ${i+1} — regenerating...`, 'retry');
+        setStep('halluc',   'retry', `retry ${i+1} — re-checking...`,  'retry');
+        log(`🔄 Retry ${i+1} triggered — score was low`, 'warn');
+        await delay(800);
+    }
+    setStep('generate', 'done', 'final answer generated', 'done');
+    setStep('halluc', score >= 0.7 ? 'done' : 'error',
+        score >= 0.7 ? `grounded ✓ (${score.toFixed(2)})` : `weak (${score.toFixed(2)})`,
+        score >= 0.7 ? 'done' : 'weak'
+    );
+    log(`✓ After ${retries} retries — final score: ${score.toFixed(2)}`, score >= 0.7 ? 'success' : 'error');
+    } else {
+    setStep('halluc', 'active', 'checking score...', 'running');
+    await delay(500);
+    setStep('halluc', score >= 0.7 ? 'done' : 'error',
+        score >= 0.7 ? `grounded ✓ (${score.toFixed(2)})` : `weak (${score.toFixed(2)})`,
+        score >= 0.7 ? 'done' : 'weak'
+    );
+    log(`hallucination score: ${score.toFixed(2)}`, score >= 0.7 ? 'success' : 'error');
+    }
+
+    // Update stats
+    document.getElementById('statScore').textContent   = score.toFixed(2);
+    document.getElementById('statScore').style.color   = score >= 0.7 ? 'var(--teal)' : 'var(--danger)';
+
+    if (retries > 0) {
+      // Show retry loop visually
+      state.totalRetries += retries;
+      document.getElementById('statRetries').textContent = state.totalRetries;
+
+      setStep('halluc', 'error', `low score ${score.toFixed(2)} → retrying`, 'retry');
+      log(`⚠️ Hallucination detected! Score: ${score.toFixed(2)} — triggering retry`, 'error');
+
+      for (let i = 0; i < retries; i++) {
+        await delay(500);
+        setStep('retrieve', 'retry', `retry ${i+1} — searching again...`, 'retry');
+        log(`🔄 Retry ${i+1}: re-retrieving docs...`, 'warn');
+
+        await delay(600);
+        setStep('retrieve', 'done', `retry ${i+1} done`, 'done');
+        setStep('generate', 'retry', `retry ${i+1} — regenerating...`, 'retry');
+        log(`🔄 Retry ${i+1}: regenerating answer...`, 'warn');
+
+        await delay(500);
+        setStep('generate', 'done', 'regenerated', 'done');
+        setStep('halluc', 'active', `re-checking score...`, 'running');
+        await delay(400);
+      }
+
+      // Final score after retries
+      if (score >= 0.7) {
+        setStep('halluc', 'done', `grounded after ${retries} retries ✓ (${score.toFixed(2)})`, 'done');
+        log(`✓ Grounded after ${retries} retries. Final score: ${score.toFixed(2)}`, 'success');
+        showToast(`🔄 ${retries} retry(s) triggered — grounded ✓`);
+      } else {
+        setStep('halluc', 'error', `still weak after ${retries} retries (${score.toFixed(2)})`, 'error');
+        log(`⚠️ Still weak after ${retries} retries. Score: ${score.toFixed(2)}`, 'error');
+        showToast(`⚠️ Answer may be weak — ${retries} retries exhausted`, 'error');
+      }
+    } else {
+      // No retry
+      if (score >= 0.7) {
+        setStep('halluc', 'done', `grounded ✓ (${score.toFixed(2)})`, 'done');
+        log(`✓ Grounded. Score: ${score.toFixed(2)}`, 'success');
+      } else {
+        setStep('halluc', 'error', `weak score (${score.toFixed(2)})`, 'error');
+        log(`⚠️ Weak score: ${score.toFixed(2)}`, 'error');
+      }
+    }
 
     removeThinking(thinking);
     const answer = data.answer || data.error || 'Something went wrong.';
@@ -726,21 +635,15 @@ async function handleQuestion(question) {
 
 function delay(ms) { return new Promise(r => setTimeout(r, ms)); }
 
-// ── Chat helpers ───────────────────────────────────────────────────
+// ── Chat ───────────────────────────────────────────────────────────
 function addMessage(role, text) {
   const container = document.getElementById('chatContainer');
   document.getElementById('chatEmpty').style.display = 'none';
-  const wrap   = document.createElement('div');
-  wrap.className = `bubble-wrap ${role}`;
-  const label  = document.createElement('div');
-  label.className = 'bubble-label';
-  label.textContent = role === 'user' ? 'You' : 'Agent';
-  const bubble = document.createElement('div');
-  bubble.className = `bubble ${role}`;
-  bubble.textContent = text;
+  const wrap = document.createElement('div'); wrap.className = `bubble-wrap ${role}`;
+  const label = document.createElement('div'); label.className = 'bubble-label'; label.textContent = role === 'user' ? 'You' : 'Agent';
+  const bubble = document.createElement('div'); bubble.className = `bubble ${role}`; bubble.textContent = text;
   wrap.appendChild(label); wrap.appendChild(bubble);
-  container.appendChild(wrap);
-  container.scrollTop = container.scrollHeight;
+  container.appendChild(wrap); container.scrollTop = container.scrollHeight;
 }
 
 function addThinking() {
@@ -748,16 +651,14 @@ function addThinking() {
   const wrap = document.createElement('div');
   wrap.className = 'bubble-wrap agent'; wrap.id = 'thinking';
   wrap.innerHTML = '<div class="bubble-label">Agent</div><div class="bubble agent thinking">Thinking...</div>';
-  container.appendChild(wrap);
-  container.scrollTop = container.scrollHeight;
+  container.appendChild(wrap); container.scrollTop = container.scrollHeight;
   return wrap;
 }
 function removeThinking(el) { el?.remove(); }
 
 // ── Text input ─────────────────────────────────────────────────────
 document.getElementById('askBtn').addEventListener('click', () => {
-  const inp = document.getElementById('textInput');
-  handleQuestion(inp.value); inp.value = '';
+  const inp = document.getElementById('textInput'); handleQuestion(inp.value); inp.value = '';
 });
 document.getElementById('textInput').addEventListener('keydown', e => {
   if (e.key === 'Enter') { handleQuestion(e.target.value); e.target.value = ''; }
@@ -809,9 +710,11 @@ document.getElementById('ttsToggle').addEventListener('click', () => {
 document.getElementById('clearBtn').addEventListener('click', async () => {
   const c = document.getElementById('chatContainer');
   c.innerHTML = '<div class="chat-empty" id="chatEmpty">Load documents and ask a question to begin.</div>';
-  state.questionCount = 0;
+  state.questionCount = 0; state.totalRetries = 0;
   document.getElementById('statQuestions').textContent = '0';
   document.getElementById('statTime').textContent = '—';
+  document.getElementById('statRetries').textContent = '0';
+  document.getElementById('statScore').textContent = '—';
   resetQuerySteps();
   document.getElementById('logBox').innerHTML = '';
   await fetch(`${API}/clear`, { method: 'POST' });
@@ -829,7 +732,7 @@ document.querySelectorAll('.tab').forEach(tab => {
   });
 });
 
-// ── Check status on load ───────────────────────────────────────────
+// ── Status on load ─────────────────────────────────────────────────
 async function checkStatus() {
   try {
     const res = await fetch(`${API}/status`);

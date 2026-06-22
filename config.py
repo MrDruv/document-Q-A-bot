@@ -5,15 +5,20 @@ from dataclasses import dataclass
 class Config:
     # Embeddings
     embed_model: str = "all-MiniLM-L6-v2"
-    chunk_size: int = 512
-    chunk_overlap: int = 64
+    chunk_size: int = 1000
+    chunk_overlap: int = 150
+
+
+    # Hallucination guard
+    hallucination_threshold: float = 0.7
+    max_retries: int = 2
 
     # Retrieval
     top_k: int = 5
     score_threshold: float = 0.72
 
     # LLM
-    llm_model: str = "llama-3.3-70b-versatile"     # cheap + fast for voice
+    llm_model: str = "llama-3.1-8b-instant"     # cheap + fast for voice
     temperature: float = 0.2              # low = more factual
 
     # Voice

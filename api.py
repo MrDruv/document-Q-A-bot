@@ -58,7 +58,11 @@ async def upload_docs(files: list[UploadFile] = File(...)):
 @app.post("/ask")
 async def ask(question: str = Form(...)):
     if not state["loaded"]:
-        return JSONResponse({"error": "No documents loaded"}, status_code=400)
+        return {
+            "answer": result["answer"],
+            "hallucination_score": result.get("hallucination_score", 1.0),
+            "retry_count": result.get("retry_count", 0)
+        }
 
     agent_state = {
         "question":            question,
@@ -69,7 +73,12 @@ async def ask(question: str = Form(...)):
     }
 
     result = state["graph"].invoke(agent_state)
-    return {"answer": result["answer"]}
+    return {
+        "answer":              result["answer"],
+        "hallucination_score": result.get("hallucination_score", 1.0),
+        "retry_count":         result.get("retry_count", 0),
+        "no_docs":             result.get("hallucination_score") == -1.0
+    }
 
 @app.post("/clear")
 async def clear():
